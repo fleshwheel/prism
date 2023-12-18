@@ -5,14 +5,14 @@ import numpy as np
 from PIL import Image
 from scipy.io import wavfile
 
-BLOCK_SIZE = 256
+BLOCK_SIZE = 1024
 assert BLOCK_SIZE % 2 == 0
 
 def make_blocks(data):
     overlap = int(BLOCK_SIZE / 2)
     return np.array([data[i : i + BLOCK_SIZE] for i in range(0, len(data) - BLOCK_SIZE, overlap)])
 
-with open("440.wav", "rb") as f:
+with open("lall.wav", "rb") as f:
     rate, data = wavfile.read(f)
     
 blocks = make_blocks(data)
@@ -60,15 +60,18 @@ print("magnitudes[0] = ", magnitudes[0])
 
 freqs = np.fft.fftfreq(BLOCK_SIZE, 1 / rate)
 
-
 num_samples = len(magnitudes)
 final_length = num_samples / rate # final length in seconds
 
 # i add the "f +" term to spac eit out phase wise
-full_spectrum = np.array([[np.sin(f + (f * t * 2 * np.pi / rate)) for f in freqs] for t in np.linspace(0, final_length, num_samples)])
+full_spectrum = np.array([[np.sin(f + (f * t * 2 * np.pi * rate)) for f in freqs] for t in np.linspace(0, final_length, num_samples)])
 result = np.zeros(im.shape[0] * int(BLOCK_SIZE / 2)).astype(np.float32)
 
 print("setting this many")
+
+magnitudes = np.zeros(magnitudes.shape)
+for row in magnitudes:
+    row[1] = 1000
 
 for i in range(len(result)):
     result[i] = np.dot(full_spectrum[i], magnitudes[i])
