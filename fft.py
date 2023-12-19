@@ -13,7 +13,7 @@ def make_blocks(data):
     overlap = BLOCK_SIZE // 2
     return np.array([data[i : i + BLOCK_SIZE] for i in range(0, len(data) - BLOCK_SIZE, overlap)])
 
-with open("tomato.wav", "rb") as f:
+with open("amen.wav", "rb") as f:
     rate, data = wavfile.read(f)
     
 if data.dtype == np.int32:
@@ -25,8 +25,8 @@ data = data * 8192
 
 
     
-#left, right = list(zip(*data))    
-#data = np.array(left)
+left, right = list(zip(*data))    
+data = np.array(left)
     
 blocks = make_blocks(data)
 
@@ -47,7 +47,6 @@ print("min is", min(result.flatten()))
 
 # normalizing ?? need 2 figure out how to calc factor
 result = result / max(abs(result.flatten()))
-result = np.clip(result, 1e-12, None)
 
 spectrogram = Image.new("RGB", result.shape)
 
@@ -69,5 +68,5 @@ plt.imshow(result)
 plt.show()
 
 spectrogram.show()
-spectrogram.save("0.bmp")
+spectrogram.save("amen.bmp")
 print(result)

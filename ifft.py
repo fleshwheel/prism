@@ -12,8 +12,20 @@ BLOCK_SIZE = 512
 WINDOW_SIZE = BLOCK_SIZE//2
 assert BLOCK_SIZE % 2 == 0
 
-im = np.asarray(Image.open("out.bmp"))
-mags = np.rot90(im, 3).astype(np.float32)
+im = np.asarray(Image.open("amen.bmp"))
+print(im.shape)
+
+mags = np.zeros((im.shape[0], im.shape[1])).astype(np.float32)
+
+for i in range(im.shape[0]):
+    for j in range(im.shape[1]):
+        if im[i][j][0] > 0:
+            mags[i][j] = im[i][j][0]
+        if im[i][j][2] < 0:
+            mags[i][j] = -im[i][j][2]
+
+print("mags shape is")
+print(mags.shape)
 
 mags = mags / (2 ** 8) # scale to 0-1
 mags = np.power(mags * 16 - 8, 10)
@@ -35,12 +47,19 @@ for (window_idx, window_start) in tqdm(list(enumerate(range(0, num_samples, WIND
         sample_idx = window_start + tic
         
         for (freq_idx, freq) in enumerate(freqs):
-            mag = mags[window_idx][freq_idx]
-            result[sample_idx] += mag * np.sin(2 * np.pi * freq * (sample_idx / num_samples) + phases[freq_idx])
+            mag = mags[window_idx][freq_idx]      
+            result[sample_idx] += mag * np.sin(2.0 * np.pi * (sample_idx / num_samples) * freq + phases[freq_idx])
 
 result /= np.max(abs(result.flatten()))
     
-with open("final.wav", "wb") as f:
+with open("amen-recovered.wav", "wb") as f:
     wavfile.write(f, rate, result)
+
+from scipy.signal import spectrogram
+
+f, t, Sxx = spectrogram(result, rate)
+import matplotlib.pyplot as plt
+plt.imshow(Sxx)
+plt.show()
 
 print(result.shape)
