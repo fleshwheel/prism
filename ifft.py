@@ -1,65 +1,46 @@
 #!/usr/bin/python3
 
+from tqdm import tqdm
 import sys
+import random
 import numpy as np
 from PIL import Image
 from scipy.io import wavfile
 
 rate = 44100
-BLOCK_SIZE = 256
+BLOCK_SIZE = 512
+WINDOW_SIZE = BLOCK_SIZE//2
 assert BLOCK_SIZE % 2 == 0
 
-im = np.asarray(Image.open("out.bmp"))
-im = np.rot90(im, 3).astype(np.float32) / (2 ** 8)
+im = np.asarray(Image.open("test.bmp"))
+mags = np.rot90(im, 3).astype(np.float32)
 
-print("shape of u")
-print(im.shape)
+mags = mags / (2 ** 8) # scale to 0-1
+mags = np.power(mags * 16 - 8, 10)
 
-import matplotlib.pyplot as plt
+freqs = np.fft.fftfreq(BLOCK_SIZE, 1 / rate)[:WINDOW_SIZE]
 
-magnitudes = np.zeros((im.shape[0] * int(BLOCK_SIZE / 2), BLOCK_SIZE))
-
-for (line_idx, line) in enumerate(im):
-    for idx in range(int(BLOCK_SIZE / 2)):
-        magnitudes[line_idx * int(BLOCK_SIZE / 2) + idx] = line
-
-magnitudes = magnitudes * 1_552_737.0
-
-freqs = np.fft.fftfreq(BLOCK_SIZE, 1 / rate)
-
-
-print("freqs are")
-print(freqs)
-
-
-num_samples = len(magnitudes)
+num_samples = len(mags) * WINDOW_SIZE
 final_length = num_samples / rate # final length in seconds
 
-full_spectrum = np.array([[np.sin(f * t * 2 * np.pi) for f in freqs] for t in np.linspace(0, final_length, num_samples)])
-result = np.zeros(im.shape[0] * int(BLOCK_SIZE / 2)).astype(np.float32)
+result = np.zeros(num_samples).astype(np.float32)
 
-with open("344.wav", "wb") as f:
-    data = full_spectrum[:,2]
-    wavfile.write(f, rate, data)
+phases = [random.uniform(0,2*np.pi) for j in range(len(freqs))]
 
-import matplotlib.pyplot as plt
+print(mags)
 
-#plt.plot(full_spectrum[:,1])
-#plt.plot(full_spectrum[:,2])
-#plt.show()
-
-print("setting this many")
-
-#magnitudes = np.zeros(magnitudes.shape)
-#for row in magnitudes:
-#    row[1] = 1000
-
-for i in range(len(result)):
-    result[i] = np.dot(full_spectrum[i], magnitudes[i])
-
-result /= np.max(result, axis=0)
+for (window_idx, window_start) in tqdm(list(enumerate(range(0, num_samples, WINDOW_SIZE)))):
     
-with open("translated.wav", "wb") as f:
+    for tic in range(0, WINDOW_SIZE):
+        sample_idx = window_start + tic
+        
+        for (freq_idx, freq) in enumerate(freqs):
+            mag = mags[window_idx][freq_idx]
+            result[sample_idx] += mag * np.sin(2 * np.pi * freq * (sample_idx / num_samples) + phases[freq_idx])
+
+result /= np.max(abs(result.flatten()))
+    
+with open("final.wav", "wb") as f:
     wavfile.write(f, rate, result)
 
 print(result.shape)
