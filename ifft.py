@@ -12,7 +12,7 @@ BLOCK_SIZE = 512
 WINDOW_SIZE = BLOCK_SIZE//2
 assert BLOCK_SIZE % 2 == 0
 
-im = np.asarray(Image.open("test.bmp"))
+im = np.asarray(Image.open("out.bmp"))
 mags = np.rot90(im, 3).astype(np.float32)
 
 mags = mags / (2 ** 8) # scale to 0-1
